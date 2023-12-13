@@ -1,7 +1,5 @@
 <?php
-
-require_once plugin_dir_path(__FILE__) . 'updates/update-rows.php';
-
+require_once plugin_dir_path(__FILE__) . 'updates/insert-rows.php';
 
 /**
  * Initializes the Elo rating table in the database.
@@ -58,13 +56,16 @@ function initialize_elo_rating_table()
 /**
  * Populates the Elo rating table with default values.
  * This function calculates the initial Elo rating for each post based on shared categories and tags
- * with other posts and inserts these values into the database.
+ * with other posts. It inserts these values into the database and prepares a JSON file for each context.
  *
- * @return bool Returns true if the table is successfully populated, false otherwise.
+ * @return bool Returns true if the table is successfully populated and JSON files are created, false otherwise.
  */
 function populate_elo_rating_table_with_default_values()
 {
     global $wpdb;
+
+    // Local data storage
+    $json_storage_path = plugin_dir_path(__FILE__) . '../../local-storage/';
 
     // Default Elo rating
     $default_elo_value = 1200;
@@ -84,10 +85,12 @@ function populate_elo_rating_table_with_default_values()
 
         wp_reset_postdata();
         if ($context_query->have_posts()) {
-            $batch_update_data = [];
+            $batch_update_sql = []; // SQL batch initalization
+
             while ($context_query->have_posts()) {
                 $context_query->the_post();
                 $context_post_id = get_the_ID();
+
 
                 // Get all other posts as recommended candidates
                 $recommended_query = new WP_Query(array(
@@ -95,7 +98,10 @@ function populate_elo_rating_table_with_default_values()
                     'posts_per_page' => -1, // Fetch all posts
                     'post__not_in' => array($context_post_id), // Exclude the context post
                 ));
+
                 if ($recommended_query->have_posts()) {
+                    $batch_update_json = []; // JSON batch initialization
+
                     while ($recommended_query->have_posts()) {
                         $recommended_query->the_post();
                         $recommended_post_id = get_the_ID();
@@ -117,29 +123,46 @@ function populate_elo_rating_table_with_default_values()
                         $elo_value += $shared_categories * $category_bonus;
                         $elo_value += $shared_tags * $tag_bonus;
 
-                        // Store recommendation details
-                        $batch_update_data[] = [
+                        // Store recommendation details for batch update
+                        $batch_update_sql[] = [
                             'context_post_id' => $context_post_id,
                             'recommended_post_id' => $recommended_post_id,
                             'elo_value' => $elo_value
                         ];
+
+                        // Store recommendation details for JSON with recommended_post_id as key
+                        $batch_update_json[$recommended_post_id] = ['elo_value' => $elo_value];
+
+                    }
+
+                    // Sort the recommendations by elo_value from highest to lowest
+                    uasort($batch_update_json, function ($a, $b) {
+                        return $b['elo_value'] <=> $a['elo_value'];
+                    });
+                
+                    // Write data to JSON file
+                    if (!empty($batch_update_json)) {
+                        $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
+                        file_put_contents($json_file_name, json_encode($batch_update_json));
+                    } else {
+                        error_log("No data to update for page: $page");
                     }
                 }
                 wp_reset_postdata(); // Reset post data for the recommended query
             }
         }
 
-
-        // Batch update logic
-        if (!empty($batch_update_data)) {
-            if (!update_post_elo_rating($batch_update_data)) {
+        // Batch update SQL
+        if (!empty($batch_update_sql)) {
+            if (!insert_elo_ratings($batch_update_sql)) {
                 error_log("Failed to batch update Elo ratings on page: $page");
-                error_log("Data: " . print_r($batch_update_data, true)); // Log the data that failed to update
-                return false; // Return false to indicate failure
+                error_log("Data: " . print_r($batch_update_sql, true));
+                return false;
             }
         } else {
             error_log("No data to update for page: $page");
         }
+
         wp_reset_postdata(); // Reset post data for the context query
 
         $page++; // Move to the next page

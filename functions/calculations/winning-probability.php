@@ -16,63 +16,47 @@
  *               - joint_win_probability: Calculated joint probability of winning against all rivals.
  *               - elo_adjustments: Adjusted Elo ratings for win/loss scenarios.
  */
-function probability_of_win($context_post_id = [1], $rival_recommendations = [163, 150])
+function probability_of_win($context_post_id, $rival_recommendations)
 {
 
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'elo_rating';
+    $json_storage_path = plugin_dir_path(dirname(__FILE__, 2)) . 'local-storage/';
+    $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
 
-    $number_of_rivals = count($rival_recommendations) - 1;
-
-    $elo_data = [];
-    $sensitivity = 400;
-
-    // Rating thresholds for k-rating:
-    $low = 2300;
-    $mid = 2400;
-
-    // Default k-rating (maximum rating change after win/loss):
-    $k = 40;
-
-    // Fetch Elo ratings for each recommendation
-    foreach ($rival_recommendations as $recommendation) {
-        $elo_data[$recommendation] = [
-            'recommendation_id' => $recommendation,
-            'recommendation_elo' => null,
-            'k' => null,
-            'win_chance' => [],
-            'joint_win_probability' => [],
-            'elo_adjustments' => []
-        ];
-    }
-
-    // Convert the array of rival recommendations to a comma-separated string for SQL parsing
-    $recommendation_ids = implode(',', $rival_recommendations);
-    // Fetch Elo ratings for all recommendations in a single query
-    $sql = $wpdb->prepare("SELECT recommended_post_id, recommended_post_elo FROM $table_name WHERE context_post_id = %d AND recommended_post_id IN ($recommendation_ids)", $context_post_id);
-    $results = $wpdb->get_results($sql, ARRAY_A);
-
-    if ($results === null || is_wp_error($results)) {
-        // Log an error message and return an empty array
-        error_log("Failed to fetch Elo ratings for context ID: $context_post_id");
+    if (!file_exists($json_file_name)) {
+        error_log("`probability_of_win`: JSON file for context ID: $context_post_id not found");
         return [];
     }
 
-    // Populate `recommendation_elo` value with fetched ratings
-    foreach ($results as $row) {
-        // Recommended post ID
-        $recommendation_id = $row['recommended_post_id'];
-        // Recommended post Elo
-        $recommended_post_elo = $row['recommended_post_elo'];
-        // Write Elo rating to array for processing
-        $elo_data[$recommendation_id]['recommendation_elo'] = $recommended_post_elo;
+    $data = json_decode(file_get_contents($json_file_name), true);
+    if ($data === null) {
+        error_log("`probability_of_win`: Error decoding JSON data for context ID: $context_post_id. JSON Error: " . json_last_error_msg());
+        return [];
+    }
 
-        if ($recommended_post_elo <= $low) {
-            $elo_data[$recommendation_id]['k'] = $k;
-        } elseif ($recommended_post_elo <= $mid) {
-            $elo_data[$recommendation_id]['k'] = $k / 2;
-        } else {
-            $elo_data[$recommendation_id]['k'] = $k / 4;
+    $number_of_rivals = count($rival_recommendations) - 1;
+
+    $sensitivity = 400;
+    // Rating thresholds for k-rating:
+    $low = 2300;
+    $mid = 2400;
+    // Default k-rating (maximum rating change after win/loss):
+    $k = 40;
+
+    $elo_data = [];
+
+    // Fetch Elo ratings for each recommendation from JSON data
+    foreach ($rival_recommendations as $recommendation_id) {
+        if (isset($data[$recommendation_id])) {
+            $elo_value = $data[$recommendation_id]['elo_value'];
+            $k_value = ($elo_value <= $low) ? $k : (($elo_value <= $mid) ? ($k / 2) : ($k / 4));
+            $elo_data[$recommendation_id] = [
+                'recommendation_id' => $recommendation_id,
+                'recommendation_elo' => $elo_value,
+                'k' => $k_value,
+                'win_chance' => [],
+                'joint_win_probability' => [],
+                'elo_adjustments' => []
+            ];
         }
     }
 
