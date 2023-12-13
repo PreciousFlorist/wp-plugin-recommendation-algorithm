@@ -125,33 +125,33 @@ function probability_of_win($context_post_id = [1], $rival_recommendations = [16
     // Outer loop iterates over each recommendation.
     for ($i = 0; $i < count($rival_recommendations); $i++) {
 
-        $recommendation_a = $rival_recommendations[$i];
+        $recommendation_i = $rival_recommendations[$i];
 
-        $ra = $elo_data[$recommendation_a]['recommendation_elo'];
-        $k = $elo_data[$recommendation_a]['k'];
+        $ra = $elo_data[$recommendation_i]['recommendation_elo'];
+        $k = $elo_data[$recommendation_i]['k'];
 
         // Inner loop starts from the next recommendation in the array to avoid duplicate pairs and self-comparison.
         for ($j = $i + 1; $j < count($rival_recommendations); $j++) {
 
-            $recommendation_b = $rival_recommendations[$j];
-            $rb = $elo_data[$recommendation_b]['recommendation_elo'];
+            $recommendation_j = $rival_recommendations[$j];
+            $rb = $elo_data[$recommendation_j]['recommendation_elo'];
 
             // Calculate winning probabilities via pairwise comparisons
             // Ea = 1 / (1 + 10 ^ ((Rb - Ra) / 400))
             $probability_a = 1 / (1 + pow(10, ($rb - $ra) / $sensitivity));
             $probability_b = 1 - $probability_a;
 
-            $elo_data[$recommendation_a]['win_chance'][$recommendation_b] = $probability_a;
-            $elo_data[$recommendation_b]['win_chance'][$recommendation_a] = $probability_b;
+            $elo_data[$recommendation_i]['win_chance'][$recommendation_j] = $probability_a;
+            $elo_data[$recommendation_j]['win_chance'][$recommendation_i] = $probability_b;
         }
 
         // Calculate the overall oods of winning once individual probabilities have been calculated against all rivals
-        if (count($elo_data[$recommendation_a]['win_chance']) === $number_of_rivals) {
+        if (count($elo_data[$recommendation_i]['win_chance']) === $number_of_rivals) {
 
             // Calculate joint probability using the Multiplication Probability Rule (General)
             //  P(A ∩ B) = P(A) P(B|A)
             $joint_probability = 1;
-            foreach ($elo_data[$recommendation_a]['win_chance'] as $individual_probability) {
+            foreach ($elo_data[$recommendation_i]['win_chance'] as $individual_probability) {
                 $joint_probability *= $individual_probability;
             }
 
@@ -161,8 +161,8 @@ function probability_of_win($context_post_id = [1], $rival_recommendations = [16
             $adjusted_rating_loss = $ra + $k * (0 - $joint_probability);
 
             // Store the adjustments
-            $elo_data[$recommendation_a]['joint_win_probability'] = $joint_probability;
-            $elo_data[$recommendation_a]['elo_adjustments'] = ['win' => round($adjusted_rating_win), 'loss' => round($adjusted_rating_loss)];
+            $elo_data[$recommendation_i]['joint_win_probability'] = $joint_probability;
+            $elo_data[$recommendation_i]['elo_adjustments'] = ['win' => round($adjusted_rating_win), 'loss' => round($adjusted_rating_loss)];
         }
     }
     return $elo_data;
