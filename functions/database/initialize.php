@@ -74,8 +74,6 @@ function populate_elo_rating_table_with_default_values()
     $per_page = 15;
     $page = 1;
 
-
-
     do {
 
         $context_query = new WP_Query(array(
@@ -134,7 +132,7 @@ function populate_elo_rating_table_with_default_values()
 
         // Batch update logic
         if (!empty($batch_update_data)) {
-            if (!add_post_elo_rating($batch_update_data)) {
+            if (!update_post_elo_rating($batch_update_data)) {
                 error_log("Failed to batch update Elo ratings on page: $page");
                 error_log("Data: " . print_r($batch_update_data, true)); // Log the data that failed to update
                 return false; // Return false to indicate failure

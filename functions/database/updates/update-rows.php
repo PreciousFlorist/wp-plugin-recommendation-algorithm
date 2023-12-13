@@ -12,7 +12,7 @@
  * 
  * @return bool Returns true if the batch update is successful, false otherwise.
  */
-function add_post_elo_rating($update_data)
+function update_post_elo_rating($update_data)
 {
     global $wpdb;
     $table_name = $wpdb->prefix . 'elo_rating';

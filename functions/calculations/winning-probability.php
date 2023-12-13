@@ -52,6 +52,12 @@ function probability_of_win($context_post_id = [1], $rival_recommendations = [16
     $sql = $wpdb->prepare("SELECT recommended_post_id, recommended_post_elo FROM $table_name WHERE context_post_id = %d AND recommended_post_id IN ($recommendation_ids)", $context_post_id);
     $results = $wpdb->get_results($sql, ARRAY_A);
 
+    if ($results === null || is_wp_error($results)) {
+        // Log an error message and return an empty array
+        error_log("Failed to fetch Elo ratings for context ID: $context_post_id");
+        return [];
+    }
+
     // Populate `recommendation_elo` value with fetched ratings
     foreach ($results as $row) {
         // Recommended post ID
