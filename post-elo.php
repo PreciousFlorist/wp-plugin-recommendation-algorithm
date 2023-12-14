@@ -19,10 +19,15 @@ if (!function_exists('add_action')) {
 	echo 'Hi there!  I\'m just a plugin, not much I can do when called directly.';
 	exit;
 }
+
+// Initialization
+require_once plugin_dir_path(__FILE__) . '/admin/functions/database/initialize.php';
+register_activation_hook(__FILE__, 'initialize_elo_rating_table');
+
 // Admin page
 require_once plugin_dir_path(__FILE__) . '/admin/admin-menu.php';
 
-// Initialize and populate default elo values
-require_once plugin_dir_path(__FILE__) . 'functions/database/initialize.php';
-register_activation_hook(__FILE__, 'initialize_elo_rating_table');
-
+// Public functions
+require_once plugin_dir_path(__FILE__) . 'public/functions/shortcodes/elo-shortcodes.php';
+require_once plugin_dir_path(__FILE__) . 'public/functions/utilities/ajax-handlers.php';
+require_once plugin_dir_path(__FILE__) . 'public/functions/utilities/script-loader.php';

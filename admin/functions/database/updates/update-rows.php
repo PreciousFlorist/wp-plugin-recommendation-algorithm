@@ -23,8 +23,8 @@ function update_elo_ratings($update_data)
         // Update existing record
         $result = $wpdb->update(
             $table_name,
-            ['recommended_post_elo' => $elo_value], // Columns to update
-            ['recommended_post_id' => $recommended_post_id] // Where clause
+            ['recommended_post_elo' => $elo_value],
+            ['recommended_post_id' => $recommended_post_id]
         );
 
         if ($result === false) {

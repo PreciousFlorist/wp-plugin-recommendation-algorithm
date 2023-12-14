@@ -19,7 +19,7 @@
 function probability_of_win($context_post_id, $rival_recommendations)
 {
 
-    $json_storage_path = plugin_dir_path(dirname(__FILE__, 2)) . 'local-storage/';
+    $json_storage_path = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage/';
     $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
 
     if (!file_exists($json_file_name)) {
@@ -149,5 +149,6 @@ function probability_of_win($context_post_id, $rival_recommendations)
             $elo_data[$recommendation_i]['elo_adjustments'] = ['win' => round($adjusted_rating_win), 'loss' => round($adjusted_rating_loss)];
         }
     }
+
     return $elo_data;
 }

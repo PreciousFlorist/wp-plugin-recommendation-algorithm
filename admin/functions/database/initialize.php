@@ -65,7 +65,7 @@ function populate_elo_rating_table_with_default_values()
     global $wpdb;
 
     // Local data storage
-    $json_storage_path = plugin_dir_path(__FILE__) . '../../local-storage/';
+    $json_storage_path = plugin_dir_path(__FILE__) . '../../../local-storage/';
 
     // Default Elo rating
     $default_elo_value = 1200;
@@ -132,14 +132,13 @@ function populate_elo_rating_table_with_default_values()
 
                         // Store recommendation details for JSON with recommended_post_id as key
                         $batch_update_json[$recommended_post_id] = ['elo_value' => $elo_value];
-
                     }
 
                     // Sort the recommendations by elo_value from highest to lowest
                     uasort($batch_update_json, function ($a, $b) {
                         return $b['elo_value'] <=> $a['elo_value'];
                     });
-                
+
                     // Write data to JSON file
                     if (!empty($batch_update_json)) {
                         $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';

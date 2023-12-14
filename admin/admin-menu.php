@@ -116,7 +116,7 @@ function clear_local_json_storage()
 /*------------------------------
 # Calculate probability 
 ------------------------------*/
-require_once plugin_dir_path(__FILE__) . '../functions/database/outputs/get-top-recommendations.php';
+require_once plugin_dir_path(__FILE__) . 'functions/outputs/get-top-recommendations.php';
 
 function calculate_and_display_probabilities()
 {
@@ -276,7 +276,9 @@ function post_elo_update_elo_ratings()
 
         // Resort the recommendations based on the updated Elo values
         uasort($data, function ($a, $b) {
-            return $b['elo_value'] <=> $a['elo_value'];
+            if (is_array($a) && is_array($b) && isset($a['elo_value']) && isset($b['elo_value'])) {
+                return $b['elo_value'] <=> $a['elo_value'];
+            }
         });
         // Save the sorted data back to the JSON file
         file_put_contents($json_file_name, json_encode($data));
@@ -319,7 +321,7 @@ function post_elo_handle_sync_database_submission()
  * @return void Outputs messages to the admin page and logs errors as needed.
  */
 
-require_once plugin_dir_path(__FILE__) . '../functions/database/updates/update-rows.php';
+require_once plugin_dir_path(__FILE__) . 'functions/database/updates/update-rows.php';
 
 function post_elo_sync_database()
 {
