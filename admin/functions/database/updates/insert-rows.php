@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 /**
  * Function to add Elo ratings in a batch.
  * This function is designed to handle both single and multiple Elo rating updates.
@@ -51,7 +55,7 @@ function insert_elo_ratings($update_data)
         error_log("Failed to batch add Elo ratings.");
         return false;
     } else {
-        error_log("Batch added Elo ratings or no new data to add.");
+        error_log("Processed batch.");
         return true;
     }
 
