@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param int $num_recommendations The number of recommendations to fetch. Defaults to 4.
  * @return array Array of recommendations with details, or an empty array if no recommendations found or on error.
  */
-function get_elo($context_page_id = null, $num_recommendations = 4)
+function get_elo($context_page_id = null, $num_recommendations = 4, $post_type = 'post')
 {
     if (is_null($context_page_id)) {
         $context_page_id = get_the_ID();
@@ -25,9 +25,9 @@ function get_elo($context_page_id = null, $num_recommendations = 4)
     }
 
     // Adjust the path based on the new file location
-    require_once dirname(plugin_dir_path(__FILE__)) . '../../../admin/functions/outputs/get-top-recommendations.php';
+    require_once dirname(plugin_dir_path(dirname(__FILE__, 2))) . '/admin/functions/outputs/get-top-recommendations.php';
     
-    $recommendations = function_exists('get_top_recommendations') ? get_top_recommendations($context_page_id, $num_recommendations) : [];
+    $recommendations = function_exists('get_top_recommendations') ? get_top_recommendations($context_page_id, $num_recommendations, $post_type) : [];
 
     if (empty($recommendations)) {
         error_log("`get_elo_recommendations`: No recommendations found for context page ID: $context_page_id");

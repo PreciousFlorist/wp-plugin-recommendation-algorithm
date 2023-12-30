@@ -18,13 +18,12 @@ if (!defined('ABSPATH')) {
  * Version: 0.0.1
  */
 
-
 // Initialization
-require_once plugin_dir_path(__FILE__) . 'admin/functions/database/initialize.php';
-register_activation_hook(__FILE__, 'initialize_elo_rating_table');
+// require_once plugin_dir_path(__FILE__) . 'admin/functions/database/initialize.php';
+// register_activation_hook(__FILE__, 'elo_init');
 
 // Deactivation
-require_once plugin_dir_path(__FILE__) . 'admin/functions/database/updates/schedule/deactivate-cron-events.php';
+require_once plugin_dir_path(__FILE__) . 'admin/functions/database/cleanup.php';
 register_deactivation_hook(__FILE__, 'post_elo_deactivate_cron_job');
 
 // Admin page
@@ -35,5 +34,5 @@ require_once plugin_dir_path(__FILE__) . 'public/functions/shortcodes/elo-shortc
 require_once plugin_dir_path(__FILE__) . 'public/functions/utilities/ajax-handlers.php';
 require_once plugin_dir_path(__FILE__) . 'public/functions/utilities/script-loader.php';
 
-// Enqueue scripts
-require_once plugin_dir_path(__FILE__) . 'admin/functions/enqueue/scripts.php';
+// Hooks
+require_once plugin_dir_path(__FILE__) . 'admin/functions/hooks/cron-hooks.php';

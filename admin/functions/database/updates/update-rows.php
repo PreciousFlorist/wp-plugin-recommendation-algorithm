@@ -4,35 +4,45 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Function to update Elo ratings in a batch.
+ * Function to update Elo ratings in a batch for multiple contexts.
  * 
- * @param array $update_data Array of data for updating Elo ratings.
- * Each element of this array should be an associative array with keys:
- * - 'recommended_post_id': ID of the recommended post
- * - 'elo_value': Elo rating value to be updated
+ * @param string $table_name The name of the database table for Elo ratings.
+ * @param array $updates Multi-dimensional associative array containing Elo rating updates.
  * 
- * @return bool Returns true if the batch update is successful, false otherwise.
+ * Top-level keys represent context IDs. Each associated value is an array of updates
+ * for that context, where each update is an associative array with:
+ *      - 'recommended_post_id': ID of the recommended post
+ *      - 'elo_value': Elo rating value to be updated (as an integer).
+ * 
+ * @return bool Returns true if all updates in the batch are successful, false if any update fails.
  */
-function update_elo_ratings($update_data)
+function update_elo_ratings($table_name, $updates)
 {
-
     global $wpdb;
-    $table_name = $wpdb->prefix . 'elo_rating';
 
-    foreach ($update_data as $data) {
-        $recommended_post_id = $data['recommended_post_id'];
-        $elo_value = $data['elo_value'];
+    foreach ($updates as $context => $recommendations) {
 
-        // Update existing record
-        $result = $wpdb->update(
-            $table_name,
-            ['recommended_post_elo' => $elo_value],
-            ['recommended_post_id' => $recommended_post_id]
-        );
+        foreach ($recommendations as $recommendation) {
 
-        if ($result === false) {
-            error_log("Failed to update Elo rating for recommended_post_id: $recommended_post_id");
-            return false;
+            $elo_value = $recommendation['elo_value'];
+            $recommended_post_id = $recommendation['recommended_post_id'];
+
+            // Update existing record
+            $result = $wpdb->update(
+                $table_name,
+                // Update `recommended_post_elo`
+                ['recommended_post_elo' => $elo_value],
+                // Where `context_post_id` and `recommended_post_id` match loop values
+                ['context_post_id' => $context, 'recommended_post_id' => $recommended_post_id],
+
+                ['%d'], // Format for the values to update
+                ['%d', '%d'] // Format for the WHERE conditions
+            );
+
+            if ($result === false) {
+                error_log("Failed to update Elo rating for recommended_post_id: $recommended_post_id");
+                return false;
+            }
         }
     }
 

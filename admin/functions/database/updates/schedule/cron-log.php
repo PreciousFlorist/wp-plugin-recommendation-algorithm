@@ -5,9 +5,9 @@
  *
  * @return array An array of the most recent log entries.
  */
-function get_recent_cron_logs()
+function get_recent_cron_logs($post_type)
 {
-    $log_file = plugin_dir_path(__FILE__) . 'cron_log.json';
+    $log_file = plugin_dir_path(__FILE__) . 'cron_log_' . $post_type . '.json';
 
     if (file_exists($log_file)) {
         $logs = json_decode(file_get_contents($log_file), true);

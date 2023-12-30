@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".elo-recommendation").forEach(function (el) {
     el.addEventListener("click", function () {
       // Get Reccomendation and Context ID
+      var postType = this.getAttribute("data-post-type");
       var recommendationId = this.getAttribute("data-recommendation-id");
       var contextId = this.getAttribute("data-context-id");
       var eloAdjustments = this.getAttribute("data-elo-adjustment");
@@ -16,8 +17,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Send the AJAX request with the data
       xhr.send(
-        "action=update_elo_rating&" +
-          "recommendation_id=" +
+        "action=update_elo_rating" +
+          "&post_type=" +
+          postType + // Context Post Type
+          "&recommendation_id=" +
           recommendationId + // Winner ID
           "&context_id=" +
           contextId + // Context ID

@@ -1,9 +1,57 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
 require_once plugin_dir_path(__FILE__) . 'updates/insert-rows.php';
+require_once plugin_dir_path(__FILE__) . 'updates/schedule/cron-management.php';
+
+/**
+ * Initializes the Elo rating table in the database.
+ * This function creates a new table to store Elo ratings for posts within a specific context.
+ * It checks if the table creation is successful and then attempts to populate it with default values.
+ * The Elo rating system is a method for calculating the relative skill levels of players in zero-sum games such as chess.
+ *
+ * @return bool Returns true if the table is successfully created and populated, false otherwise.
+ */
+function elo_init()
+{
+    // Get enabled post types from the option
+    $enabled_post_types = get_option('post_elo_enabled_post_types', []);
+    $initialized_post_types = get_option('post_elo_initialized_post_types', []);
+
+    // Create the local-storage directory if it doesn't exist
+    $storage_directory = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage';
+    if (!file_exists($storage_directory)) {
+        mkdir(
+            $storage_directory,
+            0755, // Read, write and execute permissions
+            true // Allow nested directories
+        );
+    }
+
+    // Initialize the ELO rating table for each enabled post type
+    foreach ($enabled_post_types as $post_type) {
+        // Check if the post type has already been initialized
+        if (in_array($post_type, $initialized_post_types)) {
+            error_log("Post type '$post_type' is already initialized.");
+            continue;
+        }
+
+        $count = wp_count_posts($post_type);
+        if ($count->publish > 0) {
+            initialize_elo_rating_table($post_type);
+            schedule_database_sync_job($post_type);
+            $initialized_post_types[] = $post_type;
+        } else {
+            error_log("No posts found for post type: $post_type");
+        }
+    }
+
+    // Update the list of initialized post types
+    update_option('post_elo_initialized_post_types', $initialized_post_types);
+}
+
 
 /**
  * Initializes the Elo rating table in the database.
@@ -12,33 +60,21 @@ require_once plugin_dir_path(__FILE__) . 'updates/insert-rows.php';
  *
  * @return bool Returns true if the table is successfully created and populated, false otherwise.
  */
-function initialize_elo_rating_table()
+function initialize_elo_rating_table($post_type)
 {
     global $wpdb;
 
-    $table_name = $wpdb->prefix . 'elo_rating';
+    $table_name = $wpdb->prefix . 'elo_rating_' . $post_type;
     $charset_collate = $wpdb->get_charset_collate();
 
     $sql = "CREATE TABLE $table_name (
-        -- 'id' is a unique identifier for each record in this table
         id mediumint(9) NOT NULL AUTO_INCREMENT,  
-         -- 'context_post_id' refers to the ID of the post where recommendations are shown
-         context_post_id bigint(20) UNSIGNED NOT NULL,
-        -- 'recommended_post_id' refers to the ID of the recommended post
+        context_post_id bigint(20) UNSIGNED NOT NULL,
         recommended_post_id bigint(20) UNSIGNED NOT NULL, 
-        -- 'recommended_post_elo' is the ELO rating of the recommended post in the context of the context post
         recommended_post_elo mediumint(9) DEFAULT 1200 NOT NULL,
-        
-        -- 'id' is the primary key ensuring each record is unique
         PRIMARY KEY  (id),
-        -- Ensures a unique combination of context and recommended posts
-        UNIQUE KEY context_recommended (context_post_id, recommended_post_id), 
-        -- Ensures 'context_post_id' exists in the 'wp_posts' table
-        FOREIGN KEY (context_post_id) REFERENCES wp_posts(ID), 
-        -- Ensures 'recommended_post_id' exists in the 'wp_posts' table
-        FOREIGN KEY (recommended_post_id) REFERENCES wp_posts(ID)
+        UNIQUE KEY context_recommended (context_post_id, recommended_post_id)
     ) $charset_collate;";
-
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
@@ -48,7 +84,7 @@ function initialize_elo_rating_table()
         return false;
     }
 
-    if (!populate_elo_rating_table_with_default_values()) {
+    if (!populate_elo_rating_table_with_default_values($post_type)) {
         // If rows cant be populated
         error_log('Error populating Elo rating table with default values.');
         return false;
@@ -64,12 +100,22 @@ function initialize_elo_rating_table()
  *
  * @return bool Returns true if the table is successfully populated and JSON files are created, false otherwise.
  */
-function populate_elo_rating_table_with_default_values()
+function populate_elo_rating_table_with_default_values($post_type)
 {
     global $wpdb;
 
-    // Local data storage
-    $json_storage_path = plugin_dir_path(__FILE__) . '../../../local-storage/';
+    // Store first post type ID for default values in admin settings
+    $first_context_post_id = null;
+
+    // Initialize local storage limit for total number of JSON values
+    $local_storage_limit = get_option('local_storage_limit_' . $post_type);
+
+    // Local storage directory
+    $json_storage_path = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage/' . $post_type . '/';
+    // Create the directory for the post type if it doesn't exist
+    if (!file_exists($json_storage_path)) {
+        mkdir($json_storage_path, 0755, true);
+    }
 
     // Default Elo rating
     $default_elo_value = 1200;
@@ -82,12 +128,12 @@ function populate_elo_rating_table_with_default_values()
     do {
 
         $context_query = new WP_Query(array(
+            'post_type' => $post_type,
             'post_status' => 'publish',
             'posts_per_page' => $per_page,
             'paged' => $page,
         ));
 
-        wp_reset_postdata();
         if ($context_query->have_posts()) {
             $batch_update_sql = []; // SQL batch initalization
 
@@ -95,6 +141,12 @@ function populate_elo_rating_table_with_default_values()
                 $context_query->the_post();
                 $context_post_id = get_the_ID();
 
+                // Save the first context post ID for this post type
+                if ($first_context_post_id === null) {
+                    $first_context_post_id = $context_post_id;
+                    error_log($first_context_post_id);
+                    update_option('post_elo_default_context_id_' . $post_type, $first_context_post_id);
+                }
 
                 // Get all other posts as recommended candidates
                 $recommended_query = new WP_Query(array(
@@ -143,6 +195,9 @@ function populate_elo_rating_table_with_default_values()
                         return $b['elo_value'] <=> $a['elo_value'];
                     });
 
+                    // Limit the number of entries to local_storage_limit
+                    $batch_update_json = array_slice($batch_update_json, 0, $local_storage_limit, true);
+
                     // Write data to JSON file
                     if (!empty($batch_update_json)) {
                         $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
@@ -157,13 +212,13 @@ function populate_elo_rating_table_with_default_values()
 
         // Batch update SQL
         if (!empty($batch_update_sql)) {
-            if (!insert_elo_ratings($batch_update_sql)) {
-                error_log("Failed to batch update Elo ratings on page: $page");
+            if (!insert_elo_ratings($batch_update_sql, $post_type)) {
+                error_log("Failed to batch update Elo ratings on page: $page for post type: $post_type");
                 error_log("Data: " . print_r($batch_update_sql, true));
                 return false;
             }
         } else {
-            error_log("No data to update for page: $page");
+            error_log("No data to update for post type: $post_type on page: $page");
         }
 
         wp_reset_postdata(); // Reset post data for the context query
@@ -193,8 +248,19 @@ function get_all_post_categories($post_ids)
 
     // Fetching category relationships (object_id is the post ID, term_taxonomy_id is the category ID)
     $post_ids_format = implode(',', array_fill(0, count($post_ids), '%d'));
-    $query = $wpdb->prepare("SELECT object_id, term_taxonomy_id FROM {$wpdb->term_relationships} WHERE object_id IN ($post_ids_format)", $post_ids);
-    $results = $wpdb->get_results($query, OBJECT_K);
+
+    $query = $wpdb->prepare(
+        "SELECT object_id, term_taxonomy_id
+        FROM {$wpdb->term_relationships} 
+        WHERE object_id 
+        IN ($post_ids_format)",
+        $post_ids
+    );
+
+    $results = $wpdb->get_results(
+        $query,
+        OBJECT_K // Output an associative array
+    );
 
 
     if ($results === null) {
@@ -225,7 +291,16 @@ function get_all_post_tags($post_ids)
 
     // Fetching tag relationships (object_id is the post ID, term_taxonomy_id is the tag ID)
     $post_ids_format = implode(',', array_fill(0, count($post_ids), '%d'));
-    $query = $wpdb->prepare("SELECT tr.object_id, tt.term_taxonomy_id FROM {$wpdb->term_relationships} as tr INNER JOIN {$wpdb->term_taxonomy} as tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.taxonomy = 'post_tag' AND tr.object_id IN ($post_ids_format)", $post_ids);
+    $query = $wpdb->prepare(
+        "SELECT tr.object_id, tt.term_taxonomy_id
+        FROM {$wpdb->term_relationships}
+        as tr INNER JOIN {$wpdb->term_taxonomy}
+        as tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+        WHERE tt.taxonomy = 'post_tag'
+        AND tr.object_id
+        IN ($post_ids_format)",
+        $post_ids
+    );
     $results = $wpdb->get_results($query);
 
     if ($results === null) {

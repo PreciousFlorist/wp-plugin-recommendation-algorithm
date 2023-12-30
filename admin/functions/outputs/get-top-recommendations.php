@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
@@ -13,15 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once plugin_dir_path(__FILE__) . '../calculations/winning-probability.php';
 
-function get_top_recommendations($context_post_id, $num_recommendations)
+function get_top_recommendations($context_post_id, $num_recommendations, $post_type)
 {
-    $json_storage_path = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage/';
-    $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
+    $json_storage_path = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage/' . $post_type . '/';
+    $file_path = $json_storage_path . 'context-' . $context_post_id . '.json';
+
+    // Check if the file exists before attempting to read it
+    if (!file_exists($file_path)) {
+        error_log("JSON file not found for context ID: $context_post_id at path: $file_path");
+        return [];
+    }
 
     // Read the JSON file directly
-    $json_content = @file_get_contents($json_file_name);
+    $json_content = file_get_contents($file_path);
     if ($json_content === false) {
-        error_log("Error reading JSON file for context ID: $context_post_id");
+        error_log("Failed to read JSON file for context ID: $context_post_id at path: $file_path");
         return [];
     }
 
@@ -43,5 +49,5 @@ function get_top_recommendations($context_post_id, $num_recommendations)
         return [];
     }
 
-    return probability_of_win($context_post_id, $recommendation_ids);
+    return probability_of_win($context_post_id, $recommendation_ids, $file_path, $post_type);
 }

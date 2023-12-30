@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
@@ -7,22 +7,30 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Function to add Elo ratings in a batch.
  * This function is designed to handle both single and multiple Elo rating updates.
  * 
- * @param array $update_data Array of data for updating Elo ratings.
- * Each element of this array should be an associative array with keys:
- * - 'context_post_id': ID of the context post
- * - 'recommended_post_id': ID of the recommended post
- * - 'elo_value': Elo rating value to be assigned
- * 
- * @return bool Returns true if the batch update is successful, false otherwise.
+ * @param array $update_data An array of associative arrays, each containing Elo rating data. Each element must have:
+ * - 'context_post_id' (int): The ID of the context post.
+ * - 'recommended_post_id' (int): The ID of the recommended post.
+ * - 'elo_value' (int): The Elo rating value to be assigned.
+ * @param string $post_type The type of post the Elo ratings are associated with, used to determine the correct database table.
+ *
+ * @return bool Returns true if the batch update is successful or if there are no new records to add. 
+ * Returns false if there is an error or no update data is provided.
  */
-function insert_elo_ratings($update_data)
+function insert_elo_ratings($update_data, $post_type)
 {
+
+    if (empty($update_data)) {
+        error_log("No update data provided for post type: $post_type");
+        return false;
+    }
+
     global $wpdb;
-    $table_name = $wpdb->prefix . 'elo_rating';
+    $table_name = $wpdb->prefix . 'elo_rating_' . $post_type;
 
     // Store values for a batch insert query
     $values = [];
     $placeholders = [];
+
     foreach ($update_data as $data) {
         // Extracting values from the data array
         $context_post_id = $data['context_post_id'];

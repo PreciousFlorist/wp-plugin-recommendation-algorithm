@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
@@ -19,18 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  *               - joint_win_probability: Calculated joint probability of winning against all rivals.
  *               - elo_adjustments: Adjusted Elo ratings for win/loss scenarios.
  */
-function probability_of_win($context_post_id, $rival_recommendations)
+function probability_of_win($context_post_id, $rival_recommendations, $file_path, $post_type)
 {
 
-    $json_storage_path = plugin_dir_path(dirname(__FILE__, 3)) . 'local-storage/';
-    $json_file_name = $json_storage_path . 'context-' . $context_post_id . '.json';
-
-    if (!file_exists($json_file_name)) {
+    if (!file_exists($file_path)) {
         error_log("`probability_of_win`: JSON file for context ID: $context_post_id not found");
         return [];
     }
 
-    $data = json_decode(file_get_contents($json_file_name), true);
+    $data = json_decode(file_get_contents($file_path), true);
     if ($data === null) {
         error_log("`probability_of_win`: Error decoding JSON data for context ID: $context_post_id. JSON Error: " . json_last_error_msg());
         return [];
@@ -53,6 +50,7 @@ function probability_of_win($context_post_id, $rival_recommendations)
             $elo_value = $data[$recommendation_id]['elo_value'];
             $k_value = ($elo_value <= $low) ? $k : (($elo_value <= $mid) ? ($k / 2) : ($k / 4));
             $elo_data[$recommendation_id] = [
+                'post_type' => $post_type,
                 'recommendation_id' => $recommendation_id,
                 'recommendation_elo' => $elo_value,
                 'k' => $k_value,

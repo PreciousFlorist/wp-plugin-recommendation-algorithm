@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Usage: Triggered via AJAX call on user interaction with the recommendations.
  *
+ * @global $_POST['post_type'] The post type of the context ID. Used to calcualte JSON filepath.
  * @global $_POST['context_id'] The ID of the context page from where the recommendation is selected.
  * @global $_POST['recommendation_id'] The ID of the selected recommendation.
  * @global $_POST['elo_adjustment'] The new Elo value for the selected recommendation.
@@ -22,11 +23,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 function handle_elo_update()
 {
     // Check for the required POST data
+    $post_type = filter_input(INPUT_POST, 'post_type', FILTER_SANITIZE_SPECIAL_CHARS);
     $context_id = filter_input(INPUT_POST, 'context_id', FILTER_SANITIZE_NUMBER_INT);
     $winner_id = filter_input(INPUT_POST, 'recommendation_id', FILTER_SANITIZE_NUMBER_INT);
     $winner_adjustment = filter_input(INPUT_POST, 'elo_adjustment', FILTER_SANITIZE_NUMBER_INT);
     $rival_adjustments_raw = filter_input(INPUT_POST, 'rival_adjustments', FILTER_DEFAULT);
     $rival_adjustments = $rival_adjustments_raw ? json_decode(stripslashes($rival_adjustments_raw), true) : null;
+
+    error_log("Post type: $post_type");
 
     if (!$winner_id || !$context_id || !is_array($rival_adjustments)) {
         wp_send_json_error('`handle_elo_update`: Invalid or incomplete data');
@@ -35,12 +39,12 @@ function handle_elo_update()
 
     // Path to the JSON file
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__), 3);  // Go up two levels from the current file's directory
-    $json_storage_path = $plugin_base_dir . '/local-storage/';
+    $json_storage_path = $plugin_base_dir . '/local-storage/' . $post_type . '/';
     $json_file_name = $json_storage_path . 'context-' . $context_id . '.json';
 
     // Check if the JSON file exists
     if (!file_exists($json_file_name)) {
-        wp_send_json_error('`handle_elo_update`: JSON file not found for context ID: ' . $context_id);
+        wp_send_json_error('`handle_elo_update`: JSON file not found: ' . $json_file_name);
         return;
     }
 
