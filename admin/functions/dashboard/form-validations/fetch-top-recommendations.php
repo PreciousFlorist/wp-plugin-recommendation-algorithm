@@ -17,20 +17,13 @@ if (!defined('ABSPATH')) {
 function fetch_top_recommendations()
 {
     if (
-        isset($_POST['post_elo_get_recommendations_nonce_field'])
+        isset($_POST['post_elo_get_recommendations_nonce_field'], $_POST['get_top_recommendations'], $_POST['context_post_id'], $_POST['num_recommendations'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_get_recommendations_nonce_field'], 'post_elo_get_recommendations_action')
     ) {
-        if (
-            isset($_POST['get_top_recommendations'])
-            && isset($_POST['context_post_id'])
-            && isset($_POST['num_recommendations'])
-            && isset($_POST['post_type'])
-        ) {
 
-            $post_type = $_POST['post_type'];
-            // Update stored values with the most recent input
-            update_option('post_elo_last_context_id_' . $post_type, $_POST['context_post_id']);
-            update_option('post_elo_last_num_recommendations_' . $post_type, $_POST['num_recommendations']);
-        }
+        $post_type = sanitize_text_field($_POST['post_type']);
+        // Update stored values with the most recent input
+        update_option('post_elo_last_context_id_' . $post_type, $_POST['context_post_id']);
+        update_option('post_elo_last_num_recommendations_' . $post_type, $_POST['num_recommendations']);
     }
 }

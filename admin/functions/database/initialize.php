@@ -34,7 +34,6 @@ function elo_init()
     foreach ($enabled_post_types as $post_type) {
         // Check if the post type has already been initialized
         if (in_array($post_type, $initialized_post_types)) {
-            error_log("Post type '$post_type' is already initialized.");
             continue;
         }
 

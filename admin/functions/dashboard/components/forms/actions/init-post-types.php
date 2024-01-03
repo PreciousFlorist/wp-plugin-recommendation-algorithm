@@ -29,15 +29,15 @@ function register_approved_post_types()
                     </p>
 
                     <?php
-                    require plugin_dir_path(__FILE__) . 'partials/input-batch-size.php';
-                    require plugin_dir_path(__FILE__) . 'partials/input-recommendation-pool.php';
-                    require plugin_dir_path(__FILE__) . 'partials/input-cron-schedule.php';
+                    require plugin_dir_path(dirname(__FILE__, 1)) . 'partials/inputs/batch-size.php';
+                    require plugin_dir_path(dirname(__FILE__, 1)) . 'partials/inputs/recommendation-pool.php';
+                    require plugin_dir_path(dirname(__FILE__, 1)) . 'partials/inputs/cron-schedule.php';
                     ?>
 
                     <?php wp_nonce_field('post_elo_post_type_settings_save_' . $post_type, 'post_elo_post_type_settings_nonce_' . $post_type); ?>
                     <p>
 
-                        <input class="button button-primary" type="submit" name="update_post_type_<?php echo esc_attr($post_type); ?>" value="Update <?php echo esc_html(ucfirst($post_type)); ?>" />
+                        <input class="button button-secondary" type="submit" name="update_post_type_<?php echo esc_attr($post_type); ?>" value="Update <?php echo esc_html(ucfirst($post_type)); ?>" />
 
                     </p>
                 </form>

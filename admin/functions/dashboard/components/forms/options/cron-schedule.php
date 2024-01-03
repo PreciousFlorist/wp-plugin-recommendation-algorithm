@@ -16,7 +16,7 @@ function form_set_cron_schedule($post_type)
             <form method="post" action="">
                 <?php
                 wp_nonce_field('post_elo_update_cron_action', 'post_elo_update_cron_nonce');
-                require_once plugin_dir_path(__FILE__) . 'partials/input-cron-schedule.php';
+                require_once plugin_dir_path(dirname(__FILE__, 1)) . 'partials/inputs/cron-schedule.php';
                 ?>
                 <input type="hidden" name="post_type" value="<?= esc_attr($post_type); ?>" />
                 <input type="submit" name="update_cron" class="button button-secondary" value="Update" />

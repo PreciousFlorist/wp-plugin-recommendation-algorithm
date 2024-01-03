@@ -18,12 +18,10 @@ if (!defined('ABSPATH')) {
 function handle_cron_batch_size()
 {
     if (
-        isset($_POST['post_elo_update_post_batch_size_nonce'])
+        isset($_POST['post_elo_update_post_batch_size_nonce'], $_POST['update_post_batch_size'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_update_post_batch_size_nonce'], 'post_elo_update_post_batch_size')
-        && isset($_POST['update_post_batch_size'])
-        && isset($_POST['post_type'])
     ) {
-        $post_type = $_POST['post_type'];
+        $post_type = sanitize_text_field($_POST['post_type']);
         $batch_size = (int)$_POST['post_batch_size'];
 
         if ($batch_size > 0) {

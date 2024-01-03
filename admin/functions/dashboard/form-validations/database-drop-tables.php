@@ -21,13 +21,10 @@ function handle_drop_db_tables()
     if (
         isset($_POST['drop_db_nonce_field'])
         && wp_verify_nonce($_POST['drop_db_nonce_field'], 'drop_db_action')
-        && error_log("Deleting all tables")
     ) {
-        error_log("Deleting all tables");
         $start_time = microtime(true);
         post_elo_cleanup_on_deactivation();
         $duration = number_format(microtime(true) - $start_time, 2);
-
         return '<div class="notice notice-success is-dismissible"><p><span style="font-family: monospace; margin-right: 5px; font-style: italic;">' . $duration . ' seconds:</span> Dropped all data for each enabled post type</p></div>';
     }
 }

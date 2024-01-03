@@ -12,7 +12,7 @@ if (!isset($post_type)) {
 }
 
 // Fetch the current limit from the options table or set a default value
-$current_limit = get_option('batch_size' . $post_type, 15);
+$current_limit = get_option('batch_size_' . $post_type, 15);
 
 ?>
 

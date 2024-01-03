@@ -4,20 +4,21 @@ if (!defined('ABSPATH')) {
 }
 
 // Page Config
-require_once plugin_dir_path(__FILE__) . '/components/layout-tabs.php';
+require_once plugin_dir_path(__FILE__) . '/components/layouts/tabs.php';
 
 // Plugin Configuration
-require_once plugin_dir_path(__FILE__) . '/components/form-register-post-types.php';
-require_once plugin_dir_path(__FILE__) . '/components/form-drop-database.php';
-require_once plugin_dir_path(__FILE__) . '/components/form-backup-database.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/actions/init-post-types.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/actions/drop-all-records.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/actions/backup-all-records.php';
 
 // Individual Post Components
-require_once plugin_dir_path(__FILE__) . '/components/form-flush-data.php';
-require_once plugin_dir_path(__FILE__) . '/components/form-cron-schedule.php';
-require_once plugin_dir_path(__FILE__) . '/components/form-recommendation-pool.php';
-require_once plugin_dir_path(__FILE__) . '/components/form-post-batch-size.php';
-require_once plugin_dir_path(__FILE__) . '/components/table-cron-logs.php';
-require_once plugin_dir_path(__FILE__) . '/components/table-probabilities.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/actions/flush-data.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/options/cron-schedule.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/options/recommendation-pool.php';
+require_once plugin_dir_path(__FILE__) . '/components/forms/options/post-batch-size.php';
+// Tables
+require_once plugin_dir_path(__FILE__) . '/components/tables/cron-logs.php';
+require_once plugin_dir_path(__FILE__) . '/components/tables/probabilities.php';
 
 function post_elo_settings_page()
 {
@@ -26,16 +27,10 @@ function post_elo_settings_page()
     // Retrieve enabled post types
     $current_post_type = $current_tab !== 'general' ? $current_tab : null;
     $notice = admin_form_submission();
-
-    error_log(print_r(get_option('post_elo_enabled_post_types', []), true));
 ?>
-
-
 
     <div class="wrap" style="display: flex; flex-direction: column; gap: 10px;">
         <h1>Dynamic Content Recommendations</h1>
-
-
 
         <?php if (!empty($notice)) echo $notice; ?>
 

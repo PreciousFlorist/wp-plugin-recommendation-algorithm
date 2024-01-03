@@ -18,18 +18,16 @@ if (!defined('ABSPATH')) {
 function handle_cron_schedule()
 {
     if (
-        isset($_POST['post_elo_update_cron_nonce'])
+        isset($_POST['post_elo_update_cron_nonce'], $_POST['update_cron'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_update_cron_nonce'], 'post_elo_update_cron_action')
-        && isset($_POST['update_cron'])
-        && isset($_POST['post_type'])
     ) {
-        $post_type = $_POST['post_type'];
+        $post_type = sanitize_text_field($_POST['post_type']);
         $interval_setting = 'db_sync_interval_setting_' . $post_type;
 
         // Check if the specific schedule field is set
         if (isset($_POST[$interval_setting])) {
 
-            $interval = $_POST[$interval_setting];
+            $interval = sanitize_text_field($_POST[$interval_setting]);
             $existing_interval = get_option($interval_setting);
 
             if ($interval === $existing_interval) {

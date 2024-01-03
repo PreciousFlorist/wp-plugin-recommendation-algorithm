@@ -17,13 +17,10 @@ if (!defined('ABSPATH')) {
 function handle_flush_db_tables()
 {
     if (
-        isset($_POST['post_elo_flush_nonce_field'])
+        isset($_POST['post_elo_flush_nonce_field'], $_POST['flush_elo_table'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_flush_nonce_field'], 'post_elo_flush_action')
-        && isset($_POST['flush_elo_table'])
-        && isset($_POST['post_type'])
     ) {
-
-        $post_type = $_POST['post_type'];
+        $post_type = sanitize_text_field($_POST['post_type']);
 
         $start_time = microtime(true);
         $flush = flush_elo_data($post_type);

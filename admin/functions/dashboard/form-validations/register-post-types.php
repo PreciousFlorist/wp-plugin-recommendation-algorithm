@@ -31,16 +31,18 @@ function handle_register_post_types()
             // Nonce
             $nonce_name = 'post_elo_post_type_settings_nonce_' . $post_type;
             $nonce_action = 'post_elo_post_type_settings_save_' . $post_type;
-            // Options
-            $post_type_option = 'elo_enabled_cpts_' . $post_type;
-            $interval_option = 'db_sync_interval_setting_' . $post_type;
-            $batch_size_option = 'batch_size' . $post_type;
-            $recommendation_limit_option = 'local_storage_limit_' . $post_type;
+
 
             if (
                 isset($_POST[$nonce_name])
                 && wp_verify_nonce($_POST[$nonce_name], $nonce_action)
             ) {
+                // Options
+                $post_type_option = 'elo_enabled_cpts_' . $post_type;
+                $interval_option = 'db_sync_interval_setting_' . $post_type;
+                $batch_size_option = 'batch_size' . $post_type;
+                $recommendation_limit_option = 'local_storage_limit_' . $post_type;
+
                 $start_time = microtime(true);
                 $is_enabled = isset($_POST[$post_type_option]);
 

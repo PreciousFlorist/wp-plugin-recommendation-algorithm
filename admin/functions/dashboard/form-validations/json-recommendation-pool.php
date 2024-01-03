@@ -17,16 +17,13 @@ if (!defined('ABSPATH')) {
 function handle_json_recommendation_pool()
 {
     if (
-        isset($_POST['post_elo_update_recommendation_pool_nonce'])
+        isset($_POST['post_elo_update_recommendation_pool_nonce'], $_POST['update_recommendation_pool'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_update_recommendation_pool_nonce'], 'post_elo_update_recommendation_pool')
-        && isset($_POST['update_recommendation_pool'])
-        && isset($_POST['post_type'])
     ) {
-        $post_type = $_POST['post_type'];
+        $post_type = sanitize_text_field($_POST['post_type']);
         $recommendation_limit = (int)$_POST['recommendation_limit'];
 
         if ($recommendation_limit > 0) {
-
             $option_name = 'local_storage_limit_' . $post_type;
             $existing_recommendation_limit = (int)get_option($option_name);
 
@@ -34,10 +31,8 @@ function handle_json_recommendation_pool()
                 return '<div class="notice notice-warning is-dismissible"><p>The existing recommendation pool for ' . ucfirst($post_type) . ' contexts already matches the requested value of ' . $recommendation_limit . '. No updates have been made.</p></div>';
             }
 
-            // Save the recommendation limit in an option
             $start_time = microtime(true);
             update_option($option_name, $recommendation_limit);
-            // Update the local storage for all contexts
             sync_json_to_database($post_type, true);
             $duration = number_format(microtime(true) - $start_time, 2);
 

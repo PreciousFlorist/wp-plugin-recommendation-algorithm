@@ -17,22 +17,17 @@ if (!defined('ABSPATH')) {
 function handle_sync_db_tables()
 {
     if (
-        isset($_POST['post_elo_sync_nonce_field'])
+        isset($_POST['post_elo_sync_nonce_field'], $_POST['sync_database'], $_POST['post_type'])
         && wp_verify_nonce($_POST['post_elo_sync_nonce_field'], 'post_elo_sync_action')
     ) {
-        if (
-            isset($_POST['sync_database'])
-            && isset($_POST['post_type'])
-        ) {
-            $post_type = $_POST['post_type'];
-            $sync = sync_json_to_database($post_type);
 
-            $notice = ($sync)
-                ? '<div class="updated notice"><p>Successfully synced JSON data to database.</p></div>'
-                : '<div class="error notice"><p>Error decoding JSON data and updating SQL database.</p></div>';
+        $post_type = sanitize_text_field($_POST['post_type']);
+        $sync = sync_json_to_database($post_type);
 
-            error_log($notice);
-            return $notice;
-        }
+        $notice = ($sync)
+            ? '<div class="updated notice"><p>Successfully synced JSON data to database.</p></div>'
+            : '<div class="error notice"><p>Error decoding JSON data and updating SQL database.</p></div>';
+
+        return $notice;
     }
 }
